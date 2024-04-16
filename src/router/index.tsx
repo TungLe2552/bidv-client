@@ -11,7 +11,7 @@ import { getPrefix } from "@/constant";
   const routeList: RouteObject[] = [
     {
       path: "",
-      element: <Navigate to={getPrefix() + "/login"} />
+      element: <Navigate to={"/login"} />
     },
     {
       path: getPrefix(),

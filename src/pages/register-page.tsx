@@ -1,6 +1,6 @@
 import { getBackEndUrl } from "@/constant";
 import { handleError } from "@/constant/handle-error";
-import { Button, Form, Input, Modal } from "antd";
+import { Button, Form, Input, InputNumber, Modal } from "antd";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -67,14 +67,14 @@ const RegisterPage = () => {
           <Form.Item rules={[{ required: true, message: 'Vui lòng nhập tên!' }]} name="user_name" label="Tên">
             <Input></Input>
           </Form.Item>
-          <Form.Item name="email" label="Email">
-            <Input></Input>
+          <Form.Item rules={[{ required: true, message: 'Vui lòng nhập email' }]} name="email" label="Email">
+            <Input type="email"></Input>
           </Form.Item>
-          <Form.Item name="password" label="Mật khẩu">
-            <Input></Input>
+          <Form.Item rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]} name="password" label="Mật khẩu">
+            <Input.Password />
           </Form.Item>
-          <Form.Item name="pin" label="Mã bảo mật">
-            <Input></Input>
+          <Form.Item tooltip="Vui lòng nhớ  mã bảo mật, sẽ cần thiết khi xác nhận giao dịch" name="pin" label="Mã bảo mật" rules={[{ required: true, message: 'Vui lòng nhập mã bảo mật'}]}>
+            <InputNumber min={4} max={4}></InputNumber>
           </Form.Item>
           <div className="flex gap-4 w-full">
             <Form.Item className="w-full !mb-0">
