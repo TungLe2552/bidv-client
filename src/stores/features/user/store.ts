@@ -7,7 +7,7 @@ const authSlice = createSlice({
     setUser(state: any, action: PayloadAction) {
       const data: any  = action.payload;
       state.user = data;
-      localStorage.setItem("user", data.email)
+      localStorage.setItem("user", data)
       return state;
     }
   },

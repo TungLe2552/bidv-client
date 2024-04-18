@@ -1,15 +1,26 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { handleError } from "@/constant/handle-error";
 import { setUser } from "@/stores/features/user";
-import { Button } from "antd";
-import { useEffect } from "react";
+import { Button, Form, Input, Tag } from "antd";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import "./styles.scss";
+import axios from "axios";
+import { getBackEndUrl } from "@/constant";
+import { SendOutlined } from "@ant-design/icons";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const backEndUrl = getBackEndUrl();
+  const [errMess,setErrMess] = useState(undefined)
+  const [count, setCount] = useState(0);
+  const [loadingSent,setLoadingSent] = useState(false)
+  const [loadingLogin,setLoadingLogin] = useState(false)
+
   let faceioInstance: any = null;
+  const [form] = Form.useForm()
   const faceIoScriptLoaded = () => {
     if (faceIO && !faceioInstance) {
       faceioInstance = new faceIO("fioa4c05");
@@ -17,11 +28,10 @@ const LoginPage = () => {
   };
   const faceSignIn = async () => {
     try {
-      console.log(faceioInstance);
       const userData = await faceioInstance.authenticate({
         locale: "auto",
       });
-      dispatch(setUser(userData.payload));
+      dispatch(setUser(userData.payload.email));
       navigate("/business");
     } catch (errorCode) {
       console.log(errorCode);
@@ -38,6 +48,43 @@ const LoginPage = () => {
       document.body.removeChild(faceIoScript);
     };
   }, []);
+  const sentOtp = async () => {
+    const dataSubmit = form.getFieldsValue()
+    setLoadingSent(true)
+    try {
+      await axios.post(`${backEndUrl}/api/send-otp`, dataSubmit);
+      setCount(30)
+    } catch (error:any) {
+      console.log(error);
+      setErrMess(error.response.data.message)
+    }finally{
+      setLoadingSent(false)
+    }
+  };
+  const onFinish = async (value: any) => {
+    setLoadingLogin(true)
+    try {
+      const res = await axios.post(`${backEndUrl}/api/login`, value);
+      console.log(res);
+      
+      dispatch(setUser(res.data.data.email));
+      if(res){
+        navigate("/business");
+      }
+    } catch (error:any) {
+      console.log(error);
+      setErrMess(error.response.data.message)
+    }finally{
+      setLoadingLogin(false)
+    }
+  };
+  useEffect(() => {
+    if (count > 0) {
+      setTimeout(() => {
+        setCount((prev) => (prev-1));
+      }, 1000);
+    }
+  }, [count]);
   return (
     <div className="w-full h-full flex items-center login">
       <div className="w-[400px] h-fit border rounded-lg p-4 mx-auto bg-white">
@@ -55,8 +102,51 @@ const LoginPage = () => {
           </li>
         </ul>
 
-        <Button className="my-4 w-full" type="primary" onClick={faceSignIn}>
-          Đăng nhập
+        <Form form={form} onFinish={onFinish} layout="vertical"onValuesChange={()=>setErrMess(undefined)}>
+          <Form.Item
+            rules={[{ required: true, message: "Vui lòng nhập email" }]}
+            className="!mb-4"
+            name="email"
+            label="Email"
+          >
+            <Input></Input>
+          </Form.Item>
+          <Form.Item
+            className="!mb-4"
+            rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+            name="password"
+            label="Mật khẩu"
+          >
+            <Input.Password></Input.Password>
+          </Form.Item>
+          <div className="flex gap-2 items-center">
+            <Form.Item
+              className="!mb-4 w-full"
+              name="otp_code"
+              label="Mã OTP"
+            >
+              <Input suffix={count>0?<Tag className="!mr-0" bordered={false}>{count}</Tag>:<></>}></Input>
+            </Form.Item>
+
+            <Button
+              className="mt-3"
+              loading={loadingSent}
+              icon={<SendOutlined />}
+              onClick={sentOtp}
+              disabled={count > 0}
+            />
+          </div>
+          <Form.Item className="!mb-0">
+            <Button className="w-full" type="primary" htmlType="submit" loading={loadingLogin}>
+              Đăng nhập
+            </Button>
+          </Form.Item>
+        </Form>
+        {errMess && 
+        <p className="text-red-500 text-[12px]">{errMess}</p>
+        }
+        <Button className="w-fit mt-3 " onClick={faceSignIn}>
+          Đăng nhập bằng nhận diện
         </Button>
         <p className="flex justify-center items-center">
           <span>Chưa có tài khoản? </span>
@@ -65,7 +155,7 @@ const LoginPage = () => {
             type="link"
             onClick={() => navigate("/register")}
           >
-            Đăng kí
+            Đăng ký
           </Button>
         </p>
       </div>

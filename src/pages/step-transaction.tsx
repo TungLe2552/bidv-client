@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Button, Form, Input, InputNumber, Select, Steps } from "antd";
+import { Button, Form, Input, Select, Steps } from "antd";
 import { FC, useEffect, useState } from "react";
 
 interface Props {
@@ -9,10 +10,11 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
   const [current, setCurrent] = useState(0);
   const [form] = Form.useForm();
   const [dataSubmit, setDataSubmit] = useState({
+    transaction_type: "Chuyển tiền",
     bank_name: undefined,
     account_number: undefined,
     value: undefined,
-    postage: 1,
+    postage: "Người chuyển trả",
     note: undefined,
   });
 
@@ -25,14 +27,12 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
           form={form}
           getData={(value: any) =>
             setDataSubmit((prev) => ({ ...prev, ...value }))
-            
           }
         />
       ),
     },
     {
       title: "Second",
-
       content: (
         <Step2
           form={form}
@@ -45,15 +45,18 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
     },
     {
       title: "Last",
-      content: "Last-content",
+      content: <Step3 data={dataSubmit} />,
     },
   ];
   const items = steps.map((item: any) => ({
     key: item.title,
     title: item.title,
   }));
-  const next = () => {
-    setCurrent(current + 1);
+  const next = async () => {
+    const validate = await form.validateFields();
+    if (validate) {
+      setCurrent(current + 1);
+    }
   };
 
   const prev = () => {
@@ -103,11 +106,36 @@ const Step1: FC<{
   useEffect(() => {
     form.setFieldsValue(initData);
   }, []);
+
   return (
     <>
       <Form layout="vertical" form={form}>
-        <Form.Item className="!mb-4" name="bank_name" label="Ngân hàng">
+        <Form.Item
+          className="!mb-4"
+          name="transaction_type"
+          label="Loại thanh toán"
+        >
           <Select
+            onChange={(value) => {
+              getData({ transaction_type: value });
+            }}
+            options={[
+              { label: "Chuyển tiền", value: "Chuyển tiền" },
+              { label: "thanh toán tiền điện", value: "thanh toán tiền điện" },
+              { label: "Mua hàng", value: "Mua hàng" },
+            ]}
+          ></Select>
+        </Form.Item>
+        <Form.Item
+          className="!mb-4"
+          name="bank_name"
+          label="Ngân hàng"
+          rules={[
+            { required: true, message: "Vui lòng chọn ngân hàng để tiếp tục" },
+          ]}
+        >
+          <Select
+            disabled={initData.transaction_type !== "Chuyển tiền"}
             placeholder="Chọn ngân hàng"
             onChange={(value) => {
               getData({ bank_name: value });
@@ -120,15 +148,6 @@ const Step1: FC<{
               { label: "TPBANK", value: "TPBANK" },
             ]}
           ></Select>
-        </Form.Item>
-        <Form.Item className="!mb-4" name="account_number" label="Số tài khoản">
-          <InputNumber
-            onChange={(value) => {
-              getData({ account_number: value });
-            }}
-            className="w-full"
-            placeholder="Nhập số tài khoản hưởng thụ"
-          ></InputNumber>
         </Form.Item>
       </Form>
     </>
@@ -145,32 +164,59 @@ const Step2: FC<{
   return (
     <>
       <Form form={form} layout="vertical">
-        <Form.Item className="!mb-4" name="value" label="Số tiền">
-          <InputNumber
-            onChange={(value) => {
-              getData({ value: value });
+        <Form.Item
+          className="!mb-4"
+          name="account_number"
+          label="Số tài khoản"
+          rules={[
+            {
+              required: true,
+              message: "Vui lòng nhập số tài khoản để tiếp tục",
+            },
+          ]}
+        >
+          <Input
+            type="number"
+            onChange={(e) => {
+              getData({ account_number: e.target.value });
+            }}
+            className="w-full"
+            placeholder="Nhập số tài khoản hưởng thụ"
+          ></Input>
+        </Form.Item>
+        <Form.Item
+          className="!mb-4"
+          name="value"
+          label="Số tiền"
+          rules={[
+            { required: true, message: "Vui lòng nhập số tiền để tiếp tục" },
+          ]}
+        >
+          <Input
+            type="number"
+            onChange={(e) => {
+              getData({ value: e.target.value });
             }}
             placeholder="Nhập số tiền cần chuyển"
             className="w-full"
-          ></InputNumber>
+          ></Input>
         </Form.Item>
         <Form.Item className="!mb-4" name="postage" label="Phí giao dịch">
           <Select
-            onChange={(value) => {
-              getData({ postage: value });
+            onChange={(e) => {
+              getData({ postage: e.target.value });
             }}
-            defaultValue={1}
             options={[
-              { label: "Người chuyển trả", value: 1 },
-              { label: "Người nhận trả", value: 2 },
+              { label: "Người chuyển trả", value: "Người chuyển trả" },
+              { label: "Người nhận trả", value: "Người nhận trả" },
             ]}
           ></Select>
         </Form.Item>
         <Form.Item className="!mb-4" name="note" label="Ghi chú">
           <Input.TextArea
             rows={1}
-            onChange={(value) => {
-              getData({ note: value });
+            onChange={(e) => {
+              getData({ note: e.target.value });
             }}
           ></Input.TextArea>
         </Form.Item>
@@ -178,6 +224,27 @@ const Step2: FC<{
     </>
   );
 };
-// const Step3:FC<{data:any}> = ({data})=>{
-//     return <></>
-// }
+const Step3: FC<{ data: any }> = ({ data }) => {
+  if (!data) return <></>;
+  console.log(data);
+  
+  const name: any = {
+    transaction_type: "Loại giao dịch",
+    bank_name: "Ngân hàng",
+    account_number: "Số tài khoản",
+    value: "Số tiền",
+    postage: "Phí giao dịch",
+    note: "Ghi chú",
+  };
+  return (
+    <>
+      {Object.keys(data).map((key: any) => {
+        return (
+          <div>
+            <span>{name[key]}</span>: <span>{data[key]}</span>
+          </div>
+        );
+      })}
+    </>
+  );
+};
