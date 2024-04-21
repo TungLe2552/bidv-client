@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Button, Form, Input, Select, Steps } from "antd";
+import { getBackEndUrl } from "@/constant";
+import { Button, Form, Input, Select, Steps, Tag } from "antd";
+import axios from "axios";
 import { FC, useEffect, useState } from "react";
 
 interface Props {
@@ -9,12 +11,14 @@ interface Props {
 const StepTransaction: FC<Props> = ({ onCancel }) => {
   const [current, setCurrent] = useState(0);
   const [form] = Form.useForm();
+  const backEndUrl = getBackEndUrl();
+  const [errMess, setErrMess] = useState(undefined);
   const [dataSubmit, setDataSubmit] = useState({
-    transaction_type: "Chuyển tiền",
+    transaction_type: "Chuyen tien",
     bank_name: undefined,
     account_number: undefined,
     value: undefined,
-    postage: "Người chuyển trả",
+    postage: "Nguoi chuyen tra",
     note: undefined,
   });
 
@@ -58,16 +62,37 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
       setCurrent(current + 1);
     }
   };
-
   const prev = () => {
     setCurrent(current - 1);
   };
-
+  const transaction = async () => {
+    {
+      const res = await axios.post(`${backEndUrl}/api/transaction`, dataSubmit);
+    }
+  };
   return (
     <div>
       <Steps current={current} items={items} />
-      <div className="pt-6">{steps[current].content}</div>
-      <div className="mt-8 flex gap-4">
+      <div className="pt-6 min-h-[20rem]">
+        {steps[current].content}
+        <div className=" max-w-[600px] mx-auto mt-4">
+          {Object.keys(steps).length - 1 === current ? (
+            <Form layout="vertical" className="flex gap-2 items-center">
+              <Form.Item
+                className="!mb-4 w-full"
+                name="otp_code"
+                label="Mã OTP"
+              >
+                <Input></Input>
+              </Form.Item>
+            </Form>
+          ) : (
+            <></>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8 flex gap-2 justify-end">
         <Button type="primary" onClick={() => next()}>
           Huỷ
         </Button>
@@ -77,12 +102,7 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
           </Button>
         )}
         {current === steps.length - 1 && (
-          <Button
-            type="primary"
-            onClick={() => {
-              console.log(1);
-            }}
-          >
+          <Button type="primary" onClick={() => transaction()}>
             Xác nhận
           </Button>
         )}
@@ -120,9 +140,9 @@ const Step1: FC<{
               getData({ transaction_type: value });
             }}
             options={[
-              { label: "Chuyển tiền", value: "Chuyển tiền" },
-              { label: "thanh toán tiền điện", value: "thanh toán tiền điện" },
-              { label: "Mua hàng", value: "Mua hàng" },
+              { label: "Chuyển tiền", value: "Chuyen tien" },
+              { label: "Thanh toán tiền điện", value: "Thanh toan tien dien" },
+              { label: "Mua hàng", value: "Mua hang" },
             ]}
           ></Select>
         </Form.Item>
@@ -135,7 +155,7 @@ const Step1: FC<{
           ]}
         >
           <Select
-            disabled={initData.transaction_type !== "Chuyển tiền"}
+            disabled={initData.transaction_type !== "Chuyen tien"}
             placeholder="Chọn ngân hàng"
             onChange={(value) => {
               getData({ bank_name: value });
@@ -207,8 +227,8 @@ const Step2: FC<{
               getData({ postage: e.target.value });
             }}
             options={[
-              { label: "Người chuyển trả", value: "Người chuyển trả" },
-              { label: "Người nhận trả", value: "Người nhận trả" },
+              { label: "Người chuyển trả", value: "Nguoi chuyen tra" },
+              { label: "Người nhận trả", value: "Nguoi nhan tra" },
             ]}
           ></Select>
         </Form.Item>
@@ -226,8 +246,7 @@ const Step2: FC<{
 };
 const Step3: FC<{ data: any }> = ({ data }) => {
   if (!data) return <></>;
-  console.log(data);
-  
+
   const name: any = {
     transaction_type: "Loại giao dịch",
     bank_name: "Ngân hàng",
@@ -236,15 +255,40 @@ const Step3: FC<{ data: any }> = ({ data }) => {
     postage: "Phí giao dịch",
     note: "Ghi chú",
   };
+  const transaction_type_item: any = {
+    "Chuyen tien": "Chuyển tiền",
+    "Thanh toan tien dien": "Thanh toán tiền điện",
+    "Mua hang": "Mua hang",
+  };
+  const postage_item: any = {
+    "Nguoi chuyen tra": "Người chuyển trả",
+    "Nguoi nhan tra": "Người nhận trả",
+  };
   return (
-    <>
+    <div className=" flex flex-col gap-4 border-[1px] border-[#bdbdbd] p-4 rounded-lg max-w-[600px] mx-auto">
       {Object.keys(data).map((key: any) => {
-        return (
-          <div>
-            <span>{name[key]}</span>: <span>{data[key]}</span>
-          </div>
-        );
+        if (key === "postage") {
+          return (
+            <div className="">
+              <span>{name[key]}</span>: <span>{postage_item[data[key]]}</span>
+            </div>
+          );
+        }
+        if (key === "transaction_type") {
+          return (
+            <div className="">
+              <span>{name[key]}</span>:{" "}
+              <span>{transaction_type_item[data[key]]}</span>
+            </div>
+          );
+        } else {
+          return (
+            <div className="">
+              <span>{name[key]}</span>: <span>{data[key]}</span>
+            </div>
+          );
+        }
       })}
-    </>
+    </div>
   );
 };
