@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 const authSlice = createSlice({
@@ -6,8 +7,10 @@ const authSlice = createSlice({
   reducers: {
     setUser(state: any, action: PayloadAction) {
       const data: any  = action.payload;
+      
       state.user = data;
-      localStorage.setItem("user", data)
+      localStorage.setItem("user_id", data.message.user_id)
+      localStorage.setItem("token", data.data)
       return state;
     }
   },

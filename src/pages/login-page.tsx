@@ -23,7 +23,7 @@ const LoginPage = () => {
   const [form] = Form.useForm()
   const faceIoScriptLoaded = () => {
     if (faceIO && !faceioInstance) {
-      faceioInstance = new faceIO("fioa4c05");
+      faceioInstance = new faceIO("fioa062a");
     }
   };
   const faceSignIn = async () => {
@@ -31,6 +31,8 @@ const LoginPage = () => {
       const userData = await faceioInstance.authenticate({
         locale: "auto",
       });
+      console.log(userData);
+      
       dispatch(setUser(userData.payload.email));
       navigate("/business");
     } catch (errorCode) {
@@ -65,9 +67,7 @@ const LoginPage = () => {
     setLoadingLogin(true)
     try {
       const res = await axios.post(`${backEndUrl}/api/login`, value);
-      console.log(res);
-      
-      dispatch(setUser(res.data.data.email));
+      dispatch(setUser(res.data));
       if(res){
         navigate("/business");
       }

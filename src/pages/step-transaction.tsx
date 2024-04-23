@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBackEndUrl } from "@/constant";
-import { Button, Form, Input, Select, Steps, Tag } from "antd";
+import { Button, Form, Input, InputNumber, Select, Steps, Tag } from "antd";
 import axios from "axios";
 import { FC, useEffect, useState } from "react";
 
@@ -13,6 +13,7 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
   const [form] = Form.useForm();
   const backEndUrl = getBackEndUrl();
   const [errMess, setErrMess] = useState(undefined);
+  const token = localStorage.getItem('token')
   const [dataSubmit, setDataSubmit] = useState({
     transaction_type: "Chuyen tien",
     bank_name: undefined,
@@ -67,7 +68,11 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
   };
   const transaction = async () => {
     {
-      const res = await axios.post(`${backEndUrl}/api/transaction`, dataSubmit);
+      const res = await axios.post(`${backEndUrl}/api/transaction`, dataSubmit,{
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     }
   };
   return (
@@ -208,18 +213,21 @@ const Step2: FC<{
           className="!mb-4"
           name="value"
           label="Số tiền"
+          
           rules={[
             { required: true, message: "Vui lòng nhập số tiền để tiếp tục" },
           ]}
         >
-          <Input
-            type="number"
-            onChange={(e) => {
-              getData({ value: e.target.value });
+          <InputNumber
+            parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as unknown as number}
+            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            min={1000}
+            onChange={(value) => {
+              getData({ value: value });
             }}
             placeholder="Nhập số tiền cần chuyển"
             className="w-full"
-          ></Input>
+          ></InputNumber>
         </Form.Item>
         <Form.Item className="!mb-4" name="postage" label="Phí giao dịch">
           <Select
@@ -246,7 +254,6 @@ const Step2: FC<{
 };
 const Step3: FC<{ data: any }> = ({ data }) => {
   if (!data) return <></>;
-
   const name: any = {
     transaction_type: "Loại giao dịch",
     bank_name: "Ngân hàng",
@@ -273,6 +280,11 @@ const Step3: FC<{ data: any }> = ({ data }) => {
               <span>{name[key]}</span>: <span>{postage_item[data[key]]}</span>
             </div>
           );
+        }
+        if(key === 'value'){
+          return <div className="">
+            <span>{name[key]}</span>: <span>{Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.value)}</span>
+          </div>
         }
         if (key === "transaction_type") {
           return (

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 const RegisterPage = () => {
   let faceioInstance: any = null;
   const backEndUrl = getBackEndUrl();
+  const [loading,setLoading] = useState(false);
   const navigate = useNavigate();
   const [isFaceId, setIsFaceId] = useState(false);
   const [form] = Form.useForm();
@@ -19,13 +20,13 @@ const RegisterPage = () => {
       return;
     }
     try {
-      await faceioInstance.enroll({
+      const fa = await faceioInstance.enroll({
         locale: "auto",
         payload: {
           email: dataSubmit.email,
         },
       });
-      await axios.post(`${backEndUrl}/api/register`, dataSubmit);
+      await axios.post(`${backEndUrl}/api/register`, {...dataSubmit,face_id:fa.facialId});
       form.resetFields();
       navigate("/login");
     } catch (errorCode) {
@@ -35,6 +36,7 @@ const RegisterPage = () => {
   }, [faceioInstance]);
   const createUser = async () => {
     const dataSubmit = form.getFieldsValue();
+    setLoading(true)
     const validate = await form.validateFields();
     if (!validate) {
       return;
@@ -44,6 +46,9 @@ const RegisterPage = () => {
       navigate('/login')
     } catch (error) {
       console.log(error);
+    }
+    finally{
+    setLoading(false)
     }
   };
   useEffect(() => {
@@ -58,7 +63,7 @@ const RegisterPage = () => {
   }, []);
   const faceIoScriptLoaded = () => {
     if (faceIO && !faceioInstance) {
-      faceioInstance = new faceIO("fioa4c05");
+      faceioInstance = new faceIO("fioa062a");
     }
   };
 
@@ -142,6 +147,7 @@ const RegisterPage = () => {
               <Button
                 type="primary"
                 className="w-full"
+                loading={loading}
                 onClick={() => {
                   isFaceId ? faceRegistration() : createUser();
                 }}

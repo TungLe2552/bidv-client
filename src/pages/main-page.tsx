@@ -1,26 +1,49 @@
-import { Avatar, Button, Card, Form, Input, InputNumber, Select } from "antd";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Avatar, Button, Card, Form } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { getBackEndUrl } from "@/constant";
 import StepTransaction from "./step-transaction";
+import { useNavigate } from "react-router-dom";
 const MainPage = () => {
   const backEndUrl = getBackEndUrl();
 
   const [show, setShow] = useState(false);
   const [userInfo, setUserInfo] = useState<any>({});
-  const user = localStorage.getItem("user");
-
-  const getData = async (params: unknown) => {
-    const res = await axios.post(`${backEndUrl}/api/info`, params);
+  const user_id = localStorage.getItem("user_id");
+  const token = localStorage.getItem("token");
+  const navigate = useNavigate()
+  const getData = async (params: any) => {
+    const res = await axios.post(
+      `${backEndUrl}/api/info/${params.user_id}`,
+      params,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     setUserInfo(res.data.data);
   };
   useEffect(() => {
-    if (user) {
-      getData({ email: user });
+    if (user_id) {
+      getData({ user_id: user_id });
     }
-  }, [user]);
-
+  }, [user_id]);
+  const logout = async () => {
+    await axios.post(
+      `${backEndUrl}/api/logout`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    localStorage.clear();
+    navigate('/login')
+  };
   const [form] = Form.useForm();
   const handelCancel = () => {
     setShow(false);
@@ -33,9 +56,20 @@ const MainPage = () => {
           <div className="flex justify-between items-center">
             <div className="flex gap-3 items-center">
               <Avatar size={64} icon={<UserOutlined />} />
-              <span>{userInfo?.user_name || "Admin"}</span>
+              <div>
+                <p>{userInfo?.user_name || "Admin"}</p>
+                <p>
+                  Số dư:{" "}
+                  {userInfo.cash
+                    ? Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(userInfo.cash.value)
+                    : 0}
+                </p>
+              </div>
             </div>
-            <Button>Đăng xuất</Button>
+            <Button onClick={logout}>Đăng xuất</Button>
           </div>
         </Card>
       </header>
