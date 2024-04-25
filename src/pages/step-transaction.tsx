@@ -7,15 +7,20 @@ import { FC, useEffect, useState } from "react";
 
 interface Props {
   onCancel?: () => void;
+  data: any;
 }
-const StepTransaction: FC<Props> = ({ onCancel }) => {
+const StepTransaction: FC<Props> = ({ onCancel, data }) => {
   const [current, setCurrent] = useState(0);
   const [form] = Form.useForm();
+  const [isOpt, setIsOtp] = useState(false);
+  const [otp,setOtp] = useState()
   const backEndUrl = getBackEndUrl();
   const [errMess, setErrMess] = useState(undefined);
-  const token = localStorage.getItem('token')
+  const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("token");
   const [dataSubmit, setDataSubmit] = useState({
-    transaction_type: "Chuyen tien",
+    transaction_type: "tranfer",
+    account: data.bank_card.code,
     bank_name: undefined,
     account_number: undefined,
     value: undefined,
@@ -67,12 +72,46 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
     setCurrent(current - 1);
   };
   const transaction = async () => {
-    {
-      const res = await axios.post(`${backEndUrl}/api/transaction`, dataSubmit,{
-        headers: {
-          'Authorization': `Bearer ${token}`
+    setLoading(true);
+    try {
+      if(!isOpt){
+        const res = await axios.post(
+          `${backEndUrl}/api/transaction`,
+          dataSubmit,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setIsOtp(res.data.data.has_otp);
+        if (!res.data.data.has_otp) {
+          setCurrent(0);
+          setDataSubmit({
+            transaction_type: "tranfer",
+            account: data.bank_card.code,
+            bank_name: undefined,
+            account_number: undefined,
+            value: undefined,
+            postage: "Nguoi chuyen tra",
+            note: undefined,
+          });
         }
-      });
+      }else{
+        const res = axios.post(
+          `${backEndUrl}/api/check-otp-transaction`,
+          {...dataSubmit,otp_code:otp},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -81,14 +120,15 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
       <div className="pt-6 min-h-[20rem]">
         {steps[current].content}
         <div className=" max-w-[600px] mx-auto mt-4">
-          {Object.keys(steps).length - 1 === current ? (
+          {Object.keys(steps).length - 1 === current && isOpt ? (
             <Form layout="vertical" className="flex gap-2 items-center">
+              <span>VUi lòng nhập mã otp được gửi qua email để xác nhận thanh toán</span>
               <Form.Item
                 className="!mb-4 w-full"
                 name="otp_code"
                 label="Mã OTP"
               >
-                <Input></Input>
+                <Input onChange={(e:any)=>setOtp(e.target.value)}></Input>
               </Form.Item>
             </Form>
           ) : (
@@ -107,7 +147,7 @@ const StepTransaction: FC<Props> = ({ onCancel }) => {
           </Button>
         )}
         {current === steps.length - 1 && (
-          <Button type="primary" onClick={() => transaction()}>
+          <Button loading={loading} type="primary" onClick={() => transaction()}>
             Xác nhận
           </Button>
         )}
@@ -145,9 +185,13 @@ const Step1: FC<{
               getData({ transaction_type: value });
             }}
             options={[
-              { label: "Chuyển tiền", value: "Chuyen tien" },
-              { label: "Thanh toán tiền điện", value: "Thanh toan tien dien" },
-              { label: "Mua hàng", value: "Mua hang" },
+              { label: "Chuyển tiền", value: "tranfer" },
+              { label: "Thanh toán tiền điện", value: "utilities" },
+              { label: "Mua sắm", value: "shopping" },
+              { label: "Mua thẻ điện thoại", value: "phone_recharge" },
+              { label: "Đóng bảo hiểm", value: "insurance" },
+              { label: "Gửi tiết kiệm", value: "savings" },
+              { label: "Đóng học phí", value: "learn" },
             ]}
           ></Select>
         </Form.Item>
@@ -155,12 +199,19 @@ const Step1: FC<{
           className="!mb-4"
           name="bank_name"
           label="Ngân hàng"
-          rules={[
-            { required: true, message: "Vui lòng chọn ngân hàng để tiếp tục" },
-          ]}
+          rules={
+            initData.transaction_type === "tranfer"
+              ? [
+                  {
+                    required: true,
+                    message: "Vui lòng chọn ngân hàng để tiếp tục",
+                  },
+                ]
+              : undefined
+          }
         >
           <Select
-            disabled={initData.transaction_type !== "Chuyen tien"}
+            disabled={initData.transaction_type !== "tranfer"}
             placeholder="Chọn ngân hàng"
             onChange={(value) => {
               getData({ bank_name: value });
@@ -213,14 +264,17 @@ const Step2: FC<{
           className="!mb-4"
           name="value"
           label="Số tiền"
-          
           rules={[
             { required: true, message: "Vui lòng nhập số tiền để tiếp tục" },
           ]}
         >
           <InputNumber
-            parser={(value) => value?.replace(/\$\s?|(,*)/g, '') as unknown as number}
-            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            parser={(value) =>
+              value?.replace(/\$\s?|(,*)/g, "") as unknown as number
+            }
+            formatter={(value) =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            }
             min={1000}
             onChange={(value) => {
               getData({ value: value });
@@ -256,16 +310,21 @@ const Step3: FC<{ data: any }> = ({ data }) => {
   if (!data) return <></>;
   const name: any = {
     transaction_type: "Loại giao dịch",
-    bank_name: "Ngân hàng",
-    account_number: "Số tài khoản",
+    account: "Tài khoản nguồn",
+    bank_name: "Đến ngân hàng",
+    account_number: "Đến số tài khoản",
     value: "Số tiền",
     postage: "Phí giao dịch",
     note: "Ghi chú",
   };
   const transaction_type_item: any = {
-    "Chuyen tien": "Chuyển tiền",
-    "Thanh toan tien dien": "Thanh toán tiền điện",
-    "Mua hang": "Mua hang",
+    tranfer: "Chuyển tiền",
+    utilities: "Thanh toán tiền điện",
+    shopping: "Mua sắm",
+    phone_recharge: "Mua thẻ điện thoại",
+    insurance: "Đóng bảo hiểm",
+    savings: "Gửi tiết kiệm",
+    learn: "Đóng học phí",
   };
   const postage_item: any = {
     "Nguoi chuyen tra": "Người chuyển trả",
@@ -281,10 +340,18 @@ const Step3: FC<{ data: any }> = ({ data }) => {
             </div>
           );
         }
-        if(key === 'value'){
-          return <div className="">
-            <span>{name[key]}</span>: <span>{Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.value)}</span>
-          </div>
+        if (key === "value") {
+          return (
+            <div className="">
+              <span>{name[key]}</span>:{" "}
+              <span>
+                {Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(data.value)}
+              </span>
+            </div>
+          );
         }
         if (key === "transaction_type") {
           return (

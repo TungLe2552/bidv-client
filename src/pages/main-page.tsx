@@ -57,14 +57,15 @@ const MainPage = () => {
             <div className="flex gap-3 items-center">
               <Avatar size={64} icon={<UserOutlined />} />
               <div>
-                <p>{userInfo?.user_name || "Admin"}</p>
+                <p>{userInfo?.partner.name || "Admin"}</p>
+                <p>Số tài khoản: {userInfo.bank_card.code}</p>
                 <p>
                   Số dư:{" "}
-                  {userInfo.cash
+                  {userInfo.bank_card
                     ? Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
-                      }).format(userInfo.cash.value)
+                      }).format(userInfo.bank_card.mount)
                     : 0}
                 </p>
               </div>
@@ -83,7 +84,7 @@ const MainPage = () => {
           <p className="font-semibold text-[18px] text-center mb-4">
             Chuyển tiền nhanh 24/7
           </p>
-          <StepTransaction />
+          <StepTransaction data={userInfo}/>
         </div>
       )}
     </div>

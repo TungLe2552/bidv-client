@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBackEndUrl } from "@/constant";
 import { handleError } from "@/constant/handle-error";
-import { Button, Checkbox, Form, Input } from "antd";
+import { Button, Checkbox, DatePicker, Form, Input, Radio, Select } from "antd";
 import axios from "axios";
+import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
   let faceioInstance: any = null;
   const backEndUrl = getBackEndUrl();
-  const [loading,setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [isFaceId, setIsFaceId] = useState(false);
+  const [occupations,setOccupations] = useState([])
   const [form] = Form.useForm();
   const faceRegistration = useCallback(async () => {
     const dataSubmit = form.getFieldsValue();
@@ -26,7 +28,10 @@ const RegisterPage = () => {
           email: dataSubmit.email,
         },
       });
-      await axios.post(`${backEndUrl}/api/register`, {...dataSubmit,face_id:fa.facialId});
+      await axios.post(`${backEndUrl}/api/register`, {
+        ...dataSubmit,
+        face_id: fa.facialId,
+      });
       form.resetFields();
       navigate("/login");
     } catch (errorCode) {
@@ -36,27 +41,39 @@ const RegisterPage = () => {
   }, [faceioInstance]);
   const createUser = async () => {
     const dataSubmit = form.getFieldsValue();
-    setLoading(true)
+    setLoading(true);
     const validate = await form.validateFields();
     if (!validate) {
       return;
     }
     try {
-      await axios.post(`${backEndUrl}/api/register`, dataSubmit);
-      navigate('/login')
+      await axios.post(`${backEndUrl}/api/register`, {...dataSubmit,birth_date: dayjs(dataSubmit.birth_date).format('YYYY-MM-DD')});
+      navigate("/login");
     } catch (error) {
       console.log(error);
-    }
-    finally{
-    setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
+  const getOccupations = async()=>{
+    const res = await axios.get(`${backEndUrl}/api/occupations`)
+    const data = res.data.data.map((item:any)=>{
+      return {
+        label: item.name,
+        value: item.id
+      }
+    })
+    setOccupations(data)
+  }
   useEffect(() => {
     const faceIoScript = document.createElement("script");
     faceIoScript.src = "//cdn.faceio.net/fio.js";
     faceIoScript.async = true;
     faceIoScript.onload = () => faceIoScriptLoaded();
     document.body.appendChild(faceIoScript);
+
+
+    getOccupations()
     return () => {
       document.body.removeChild(faceIoScript);
     };
@@ -124,6 +141,26 @@ const RegisterPage = () => {
           >
             <Input.Password />
           </Form.Item>
+          <div className="flex gap-2">
+            <Form.Item name="occupation_id" label="Nghề nghiệp" className="!mb-4 w-full">
+              <Select options={occupations} className="w-full"></Select>
+            </Form.Item>
+            <Form.Item  name="birth_date" label="Ngày sinh" className="!mb-4 w-full">
+              <DatePicker format={'DD/MM/YYYY'} className="w-full"></DatePicker>
+            </Form.Item>
+          </div>
+          <Form.Item initialValue={'1'} label="Giới tính" name='gender'>
+            <Radio.Group>
+              <Radio value='1'>Nam</Radio>
+              <Radio value='0'>Nữ</Radio>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item initialValue={'1'} label="Tình trạng hôn nhân" name='married'>
+            <Radio.Group>
+              <Radio value='1'>Đã kết hôn</Radio>
+              <Radio value='0'>Độc thân</Radio>
+            </Radio.Group>
+          </Form.Item>
           <Form.Item className="!mb-4">
             <Checkbox
               defaultChecked={isFaceId}
@@ -134,9 +171,6 @@ const RegisterPage = () => {
               Đăng ký nhận diện khuôn mặt
             </Checkbox>
           </Form.Item>
-          {/* <Form.Item tooltip="Vui lòng nhớ  mã bảo mật, sẽ cần thiết khi xác nhận giao dịch" name="pin" label="Mã bảo mật" rules={[{ required: true, message: 'Vui lòng nhập mã bảo mật'}]}>
-            <InputNumber min={4} max={4}></InputNumber>
-          </Form.Item> */}
           <div className="flex gap-4 w-full">
             <Form.Item className="w-full !mb-0">
               <Button className="w-full" color="error">
