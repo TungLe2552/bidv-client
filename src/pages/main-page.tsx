@@ -57,15 +57,15 @@ const MainPage = () => {
             <div className="flex gap-3 items-center">
               <Avatar size={64} icon={<UserOutlined />} />
               <div>
-                <p>{userInfo?.partner.name || "Admin"}</p>
-                <p>Số tài khoản: {userInfo.bank_card.code}</p>
+                <p>{userInfo?.partner?.name || "Admin"}</p>
+                <p>Số tài khoản: {userInfo?.bank_card?.code||''}</p>
                 <p>
                   Số dư:{" "}
                   {userInfo.bank_card
                     ? Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
-                      }).format(userInfo.bank_card.mount)
+                      }).format(userInfo?.bank_card?.mount||0)
                     : 0}
                 </p>
               </div>

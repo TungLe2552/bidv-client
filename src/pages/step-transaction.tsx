@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBackEndUrl } from "@/constant";
+import { ReloadOutlined } from "@ant-design/icons";
 import { Button, Form, Input, InputNumber, Select, Steps, Tag } from "antd";
 import axios from "axios";
 import { FC, useEffect, useState } from "react";
@@ -121,15 +122,17 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
         {steps[current].content}
         <div className=" max-w-[600px] mx-auto mt-4">
           {Object.keys(steps).length - 1 === current && isOpt ? (
-            <Form layout="vertical" className="flex gap-2 items-center">
-              <span>VUi lòng nhập mã otp được gửi qua email để xác nhận thanh toán</span>
-              <Form.Item
-                className="!mb-4 w-full"
-                name="otp_code"
-                label="Mã OTP"
-              >
-                <Input onChange={(e:any)=>setOtp(e.target.value)}></Input>
-              </Form.Item>
+            <Form layout="vertical" className="">
+              <p className="my-2">Vui lòng nhập mã otp được gửi qua email để xác nhận thanh toán</p>
+              <div className="flex gap-2 items-center">
+                <Form.Item
+                  className="!mb-4 w-full"
+                  name="otp_code"
+                >
+                  <Input onChange={(e:any)=>setOtp(e.target.value)}></Input>
+                </Form.Item>
+                <Button title="Gửi lại mã" icon={<ReloadOutlined />} className="mb-4"/>
+              </div>
             </Form>
           ) : (
             <></>
