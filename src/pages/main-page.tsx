@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Avatar, Button, Card, Form } from "antd";
+import { Avatar, Button, Card } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -44,10 +44,8 @@ const MainPage = () => {
     localStorage.clear();
     navigate('/login')
   };
-  const [form] = Form.useForm();
   const handelCancel = () => {
     setShow(false);
-    form.resetFields();
   };
   return (
     <div className="p-4 h-full overflow-hidden">
@@ -84,7 +82,7 @@ const MainPage = () => {
           <p className="font-semibold text-[18px] text-center mb-4">
             Chuyển tiền nhanh 24/7
           </p>
-          <StepTransaction data={userInfo}/>
+          <StepTransaction onCancel={handelCancel} data={userInfo}/>
         </div>
       )}
     </div>

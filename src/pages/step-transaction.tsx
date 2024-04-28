@@ -2,21 +2,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBackEndUrl } from "@/constant";
 import { ReloadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Select, Steps, Tag } from "antd";
+import { Button, Form, Input, InputNumber, Select, Steps, notification } from "antd";
 import axios from "axios";
 import { FC, useEffect, useState } from "react";
-
+import { deburr } from "lodash";
 interface Props {
-  onCancel?: () => void;
+  onCancel: () => void;
   data: any;
 }
 const StepTransaction: FC<Props> = ({ onCancel, data }) => {
   const [current, setCurrent] = useState(0);
+  const [api, contextHolder] = notification.useNotification();
   const [form] = Form.useForm();
   const [isOpt, setIsOtp] = useState(false);
-  const [otp,setOtp] = useState()
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [otp, setOtp] = useState();
   const backEndUrl = getBackEndUrl();
-  const [errMess, setErrMess] = useState(undefined);
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("token");
   const [dataSubmit, setDataSubmit] = useState({
@@ -72,10 +73,23 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
   const prev = () => {
     setCurrent(current - 1);
   };
+  const newTran = ()=>{
+    setCurrent(0);
+    setIsSuccess(false)
+    setDataSubmit({
+      transaction_type: "tranfer",
+      account: data.bank_card.code,
+      bank_name: undefined,
+      account_number: undefined,
+      value: undefined,
+      postage: "Nguoi chuyen tra",
+      note: undefined,
+    });
+  }
   const transaction = async () => {
     setLoading(true);
     try {
-      if(!isOpt){
+      if (!isOpt) {
         const res = await axios.post(
           `${backEndUrl}/api/transaction`,
           dataSubmit,
@@ -87,51 +101,55 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
         );
         setIsOtp(res.data.data.has_otp);
         if (!res.data.data.has_otp) {
-          setCurrent(0);
-          setDataSubmit({
-            transaction_type: "tranfer",
-            account: data.bank_card.code,
-            bank_name: undefined,
-            account_number: undefined,
-            value: undefined,
-            postage: "Nguoi chuyen tra",
-            note: undefined,
-          });
+          setIsSuccess(true)
+          api.success({
+            message: 'Thành công',
+            description: 'Giao dịch thành công'
+          })
         }
-      }else{
-        const res = axios.post(
+      } else {
+        await axios.post(
           `${backEndUrl}/api/check-otp-transaction`,
-          {...dataSubmit,otp_code:otp},
+          { ...dataSubmit, otp_code: otp },
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
+        setIsSuccess(true)
       }
-    } catch (error) {
+    } catch (error:any) {
       console.log(error);
+      api.error({
+        message: 'Thất bại',
+        description: error.response.data.message?error.response.data.message:'Giao dịch thất bại'
+      })
     } finally {
       setLoading(false);
     }
   };
   return (
     <div>
+      {contextHolder}
       <Steps current={current} items={items} />
       <div className="pt-6 min-h-[20rem]">
         {steps[current].content}
         <div className=" max-w-[600px] mx-auto mt-4">
-          {Object.keys(steps).length - 1 === current && isOpt ? (
+          {Object.keys(steps).length - 1 === current && isOpt && !isSuccess ? (
             <Form layout="vertical" className="">
-              <p className="my-2">Vui lòng nhập mã otp được gửi qua email để xác nhận thanh toán</p>
+              <p className="my-2">
+                Vui lòng nhập mã otp được gửi qua email để xác nhận thanh toán
+              </p>
               <div className="flex gap-2 items-center">
-                <Form.Item
-                  className="!mb-4 w-full"
-                  name="otp_code"
-                >
-                  <Input onChange={(e:any)=>setOtp(e.target.value)}></Input>
+                <Form.Item className="!mb-4 w-full" name="otp_code">
+                  <Input onChange={(e: any) => setOtp(e.target.value)}></Input>
                 </Form.Item>
-                <Button title="Gửi lại mã" icon={<ReloadOutlined />} className="mb-4"/>
+                <Button
+                  title="Gửi lại mã"
+                  icon={<ReloadOutlined />}
+                  className="mb-4"
+                />
               </div>
             </Form>
           ) : (
@@ -139,27 +157,39 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
           )}
         </div>
       </div>
-
-      <div className="mt-8 flex gap-2 justify-end">
-        <Button type="primary" onClick={() => next()}>
-          Huỷ
-        </Button>
-        {current < steps.length - 1 && (
-          <Button type="primary" onClick={() => next()}>
-            Tiếp theo
-          </Button>
+      <>
+        {isSuccess ? (
+          <div className="mt-8 flex gap-2 justify-end">
+            <Button onClick={onCancel}>Quay lại trang chủ</Button>
+            <Button onClick={newTran}>Tạo giao dịch mới</Button>
+          </div>
+        ) : (
+          <div className="mt-8 flex gap-2 justify-end">
+            <Button type="primary" onClick={onCancel}>
+              Huỷ
+            </Button>
+            {current < steps.length - 1 && (
+              <Button type="primary" onClick={() => next()}>
+                Tiếp theo
+              </Button>
+            )}
+            {current === steps.length - 1 && (
+              <Button
+                loading={loading}
+                type="primary"
+                onClick={() => transaction()}
+              >
+                Xác nhận
+              </Button>
+            )}
+            {current > 0 && (
+              <Button style={{ margin: "0 8px" }} onClick={() => prev()}>
+                Quay lại
+              </Button>
+            )}
+          </div>
         )}
-        {current === steps.length - 1 && (
-          <Button loading={loading} type="primary" onClick={() => transaction()}>
-            Xác nhận
-          </Button>
-        )}
-        {current > 0 && (
-          <Button style={{ margin: "0 8px" }} onClick={() => prev()}>
-            Quay lại
-          </Button>
-        )}
-      </div>
+      </>
     </div>
   );
 };
@@ -247,14 +277,19 @@ const Step2: FC<{
           className="!mb-4"
           name="account_number"
           label="Số tài khoản"
-          rules={[
-            {
-              required: true,
-              message: "Vui lòng nhập số tài khoản để tiếp tục",
-            },
-          ]}
+          rules={
+            initData.transaction_type === "tranfer"
+              ? [
+                  {
+                    required: true,
+                    message: "Vui lòng nhập số tài khoản để tiếp tục",
+                  },
+                ]
+              : undefined
+          }
         >
           <Input
+            disabled={initData.transaction_type !== "tranfer"}
             type="number"
             onChange={(e) => {
               getData({ account_number: e.target.value });
@@ -297,11 +332,14 @@ const Step2: FC<{
             ]}
           ></Select>
         </Form.Item>
-        <Form.Item className="!mb-4" name="note" label="Ghi chú">
+        <Form.Item className="!mb-4" name="note" label="Ghi chú"
+        >
           <Input.TextArea
             rows={1}
             onChange={(e) => {
-              getData({ note: e.target.value });
+              const inputValue = e.target.value;
+              const inputWithoutAccents = deburr(inputValue)
+              getData({ note: inputWithoutAccents });
             }}
           ></Input.TextArea>
         </Form.Item>
@@ -338,9 +376,16 @@ const Step3: FC<{ data: any }> = ({ data }) => {
       {Object.keys(data).map((key: any) => {
         if (key === "postage") {
           return (
-            <div className="">
-              <span>{name[key]}</span>: <span>{postage_item[data[key]]}</span>
-            </div>
+            <>
+              {postage_item[data[key]] ? (
+                <div className="">
+                  <span>{name[key]}</span>:{" "}
+                  <span>{postage_item[data[key]]}</span>
+                </div>
+              ) : (
+                <></>
+              )}
+            </>
           );
         }
         if (key === "value") {
@@ -365,9 +410,15 @@ const Step3: FC<{ data: any }> = ({ data }) => {
           );
         } else {
           return (
-            <div className="">
-              <span>{name[key]}</span>: <span>{data[key]}</span>
-            </div>
+            <>
+              {data[key] ? (
+                <div className="">
+                  <span>{name[key]}</span>: <span>{data[key]}</span>
+                </div>
+              ) : (
+                <></>
+              )}
+            </>
           );
         }
       })}
