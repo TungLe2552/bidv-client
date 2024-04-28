@@ -117,6 +117,10 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
             },
           }
         );
+        api.success({
+          message: 'Thành công',
+          description: 'Giao dịch thành công'
+        })
         setIsSuccess(true)
       }
     } catch (error:any) {
