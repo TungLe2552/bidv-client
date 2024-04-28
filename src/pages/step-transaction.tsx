@@ -165,9 +165,14 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
           </div>
         ) : (
           <div className="mt-8 flex gap-2 justify-end">
-            <Button type="primary" onClick={onCancel}>
+            <Button danger onClick={onCancel}>
               Huỷ
             </Button>
+            {current > 0 && (
+              <Button style={{ margin: "0 8px" }} onClick={() => prev()}>
+                Quay lại
+              </Button>
+            )}
             {current < steps.length - 1 && (
               <Button type="primary" onClick={() => next()}>
                 Tiếp theo
@@ -180,11 +185,6 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
                 onClick={() => transaction()}
               >
                 Xác nhận
-              </Button>
-            )}
-            {current > 0 && (
-              <Button style={{ margin: "0 8px" }} onClick={() => prev()}>
-                Quay lại
               </Button>
             )}
           </div>
