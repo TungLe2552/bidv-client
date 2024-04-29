@@ -82,7 +82,7 @@ const MainPage = () => {
           <p className="font-semibold text-[18px] text-center mb-4">
             Chuyển tiền nhanh 24/7
           </p>
-          <StepTransaction onCancel={handelCancel} data={userInfo}/>
+          <StepTransaction onSuccess={()=>{getData({ user_id: user_id })}} onCancel={handelCancel} data={userInfo}/>
         </div>
       )}
     </div>

@@ -2,22 +2,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBackEndUrl } from "@/constant";
 import { ReloadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Select, Steps, notification } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Steps,
+  Tag,
+  notification,
+} from "antd";
 import axios from "axios";
 import { FC, useEffect, useState } from "react";
 import { deburr } from "lodash";
 interface Props {
   onCancel: () => void;
   data: any;
+  onSuccess?:()=>void
 }
-const StepTransaction: FC<Props> = ({ onCancel, data }) => {
+const StepTransaction: FC<Props> = ({ onCancel, data,onSuccess }) => {
   const [current, setCurrent] = useState(0);
   const [api, contextHolder] = notification.useNotification();
   const [form] = Form.useForm();
   const [isOpt, setIsOtp] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [otp, setOtp] = useState();
+  const [pinCode, setPinCode] = useState<any>();
   const backEndUrl = getBackEndUrl();
+  const [loadingSent, setLoadingSent] = useState(false);
+  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("token");
   const [dataSubmit, setDataSubmit] = useState({
@@ -73,9 +86,10 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
   const prev = () => {
     setCurrent(current - 1);
   };
-  const newTran = ()=>{
+  const newTran = () => {
     setCurrent(0);
-    setIsSuccess(false)
+    setIsSuccess(false);
+    setIsOtp(false);
     setDataSubmit({
       transaction_type: "tranfer",
       account: data.bank_card.code,
@@ -85,14 +99,14 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
       postage: "Nguoi chuyen tra",
       note: undefined,
     });
-  }
+  };
   const transaction = async () => {
     setLoading(true);
     try {
       if (!isOpt) {
         const res = await axios.post(
           `${backEndUrl}/api/transaction`,
-          dataSubmit,
+          { ...dataSubmit, pin_code: pinCode },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -100,17 +114,21 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
           }
         );
         setIsOtp(res.data.data.has_otp);
+
         if (!res.data.data.has_otp) {
-          setIsSuccess(true)
+          setIsSuccess(true);
+          onSuccess&&onSuccess()
           api.success({
-            message: 'Thành công',
-            description: 'Giao dịch thành công'
-          })
+            message: "Thành công",
+            description: "Giao dịch thành công",
+          });
+        } else {
+          setCount(30);
         }
       } else {
         await axios.post(
           `${backEndUrl}/api/check-otp-transaction`,
-          { ...dataSubmit, otp_code: otp },
+          { ...dataSubmit, otp_code: otp, pin_code: pinCode },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -118,21 +136,47 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
           }
         );
         api.success({
-          message: 'Thành công',
-          description: 'Giao dịch thành công'
-        })
-        setIsSuccess(true)
+          message: "Thành công",
+          description: "Giao dịch thành công",
+        });
+        onSuccess&&onSuccess()
+        setIsSuccess(true);
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.log(error);
       api.error({
-        message: 'Thất bại',
-        description: error.response.data.message?error.response.data.message:'Giao dịch thất bại'
-      })
+        message: "Thất bại",
+        description: error.response.data.message
+          ? error.response.data.message
+          : "Giao dịch thất bại",
+      });
     } finally {
       setLoading(false);
     }
   };
+  const sentOtp = async () => {
+    const dataSubmit = form.getFieldsValue();
+    setLoadingSent(true);
+    try {
+      await axios.post(`${backEndUrl}/api/sent-otp-tran`, dataSubmit, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCount(30);
+    } catch (error: any) {
+      console.log(error);
+    } finally {
+      setLoadingSent(false);
+    }
+  };
+  useEffect(() => {
+    if (count > 0) {
+      setTimeout(() => {
+        setCount((prev) => prev - 1);
+      }, 1000);
+    }
+  }, [count]);
   return (
     <div>
       {contextHolder}
@@ -140,21 +184,58 @@ const StepTransaction: FC<Props> = ({ onCancel, data }) => {
       <div className="pt-6 min-h-[20rem]">
         {steps[current].content}
         <div className=" max-w-[600px] mx-auto mt-4">
-          {Object.keys(steps).length - 1 === current && isOpt && !isSuccess ? (
+          {Object.keys(steps).length - 1 === current && !isSuccess ? (
             <Form layout="vertical" className="">
-              <p className="my-2">
-                Vui lòng nhập mã otp được gửi qua email để xác nhận thanh toán
-              </p>
-              <div className="flex gap-2 items-center">
-                <Form.Item className="!mb-4 w-full" name="otp_code">
-                  <Input onChange={(e: any) => setOtp(e.target.value)}></Input>
-                </Form.Item>
-                <Button
-                  title="Gửi lại mã"
-                  icon={<ReloadOutlined />}
-                  className="mb-4"
-                />
-              </div>
+              <Form.Item
+                label="Mã pin giao dịch"
+                name="pin_code"
+                className="w-[300px]"
+                rules={[
+                  { required: true, message: "Vui lòng nhập mã pin giao dịch" },
+                ]}
+              >
+                <Input.Password
+                  className="w-full"
+                  onChange={(e) => {
+                    setPinCode(e.target.value);
+                  }}
+                ></Input.Password>
+              </Form.Item>
+              {isOpt && (
+                <>
+                  <p className="my-2">
+                    Vui lòng nhập mã otp được gửi qua email để xác nhận thanh
+                    toán
+                  </p>
+                  <div className="flex gap-2 items-center">
+                    <Form.Item
+                      className="!mb-4 w-full"
+                      name="otp_code"
+                    >
+                      <Input
+                        suffix={
+                          count > 0 ? (
+                            <Tag className="!mr-0" bordered={false}>
+                              {count}
+                            </Tag>
+                          ) : (
+                            <></>
+                          )
+                        }
+                        onChange={(e: any) => setOtp(e.target.value)}
+                      ></Input>
+                    </Form.Item>
+                    <Button
+                      title="Gửi lại mã"
+                      icon={<ReloadOutlined />}
+                      disabled={count > 0}
+                      loading={loadingSent}
+                      className="mb-4"
+                      onClick={sentOtp}
+                    />
+                  </div>
+                </>
+              )}
             </Form>
           ) : (
             <></>
@@ -336,13 +417,12 @@ const Step2: FC<{
             ]}
           ></Select>
         </Form.Item>
-        <Form.Item className="!mb-4" name="note" label="Ghi chú"
-        >
+        <Form.Item className="!mb-4" name="note" label="Ghi chú">
           <Input.TextArea
             rows={1}
             onChange={(e) => {
               const inputValue = e.target.value;
-              const inputWithoutAccents = deburr(inputValue)
+              const inputWithoutAccents = deburr(inputValue);
               getData({ note: inputWithoutAccents });
             }}
           ></Input.TextArea>
