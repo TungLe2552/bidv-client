@@ -417,7 +417,7 @@ const Step2: FC<{
             ]}
           ></Select>
         </Form.Item>
-        <Form.Item className="!mb-4" name="note" label="Ghi chú">
+        <Form.Item className="!mb-4" name="note" label="Nội dung">
           <Input.TextArea
             rows={1}
             onChange={(e) => {
