@@ -123,7 +123,7 @@ const StepTransaction: FC<Props> = ({ onCancel, data,onSuccess }) => {
             description: "Giao dịch thành công",
           });
         } else {
-          setCount(30);
+          setCount(60);
         }
       } else {
         await axios.post(
@@ -163,7 +163,7 @@ const StepTransaction: FC<Props> = ({ onCancel, data,onSuccess }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      setCount(30);
+      setCount(60);
     } catch (error: any) {
       console.log(error);
     } finally {
