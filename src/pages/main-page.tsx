@@ -49,11 +49,14 @@ const MainPage = () => {
     setShow(false);
   };
   return (
-    <div className="h-full overflow-hidden">
+    <div className="h-full overflow-hidden bussiness">
       <header className="main">
         <div className="fixed w-full h-[64px] top-0 right-0 bg-white flex justify-between items-center px-[16px]">
           <div className="w-full">
-            <Input.Search className="max-w-[300px]" placeholder="Tìm kiếm bidv"></Input.Search>
+            <Input.Search
+              className="max-w-[300px]"
+              placeholder="Tìm kiếm bidv"
+            ></Input.Search>
           </div>
           <div className="w-full flex justify-center">
             <img src="./public/logo-b.jpg" alt="" />
@@ -67,13 +70,16 @@ const MainPage = () => {
             <Button onClick={logout}>Đăng xuất</Button>
           </div>
         </div>
-        <Card className="mt-[10rem]">
+        <Card className="mt-[10rem] max-w-[70%] mx-auto">
           <div className="flex justify-between items-center">
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-3 items-center justify-between w-full">
               <div>
-                <p>Số tài khoản: {userInfo?.bank_card?.code || ""}</p>
-                <p>
-                  Số dư:{" "}
+                <p className="text-[13px] text-[#8d8d8d]">Tài khoản thanh toán</p>
+                <p className="font-bold text-[16px]">{userInfo?.bank_card?.code || ""}</p>
+              </div>
+              <div>
+                <p className="text-[13px] text-[#8d8d8d]">Số dư khả dụng</p>
+                <p className="font-bold text-[16px]">
                   {userInfo.bank_card
                     ? Intl.NumberFormat("vi-VN", {
                         style: "currency",

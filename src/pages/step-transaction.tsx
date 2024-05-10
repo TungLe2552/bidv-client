@@ -4,6 +4,7 @@ import { getBackEndUrl } from "@/constant";
 import { ReloadOutlined } from "@ant-design/icons";
 import {
   Button,
+  Card,
   Form,
   Input,
   InputNumber,
@@ -178,7 +179,7 @@ const StepTransaction: FC<Props> = ({ onCancel, data,onSuccess }) => {
     }
   }, [count]);
   return (
-    <div>
+    <Card>
       {contextHolder}
       <Steps current={current} items={items} />
       <div className="pt-6 min-h-[20rem]">
@@ -275,7 +276,7 @@ const StepTransaction: FC<Props> = ({ onCancel, data,onSuccess }) => {
           </div>
         )}
       </>
-    </div>
+    </Card>
   );
 };
 
