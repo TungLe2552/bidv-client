@@ -306,7 +306,7 @@ const Step1: FC<{
             options={[
               { label: "Chuyển tiền", value: "tranfer" },
               { label: "Thanh toán tiền điện", value: "utilities" },
-              { label: "Mua sắm", value: "shopping" },
+              { label: "Mua sắm trực tuyến", value: "shopping" },
               { label: "Mua thẻ điện thoại", value: "phone_recharge" },
               { label: "Đóng bảo hiểm", value: "insurance" },
               { label: "Gửi tiết kiệm", value: "savings" },
